@@ -1,44 +1,47 @@
-import React, { useEffect, useState } from 'react';
-import { Palette, Wand2, Bot, Upload, Loader2 } from 'lucide-react';
-import CanvasEditor from './components/CanvasEditor';
-import FilterControls from './components/FilterControls';
+
+import { Bot, Loader2, Palette, Wand2 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import AIBackgroundRemoval from './components/AIBackgroundRemoval';
+import CanvasEditor from './components/CanvasEditor';
 import CommandInput from './components/CommandInput';
+import FilterControls from './components/FilterControls';
 import { ToastProvider, useToast } from './components/Toast';
 import { initializeModel } from './utils/process';
 
 function AppContent() {
-
-  const [imageFile, setimageFile] = useState(null)
-  console.log('imageFile', imageFile)
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [canvasRef, setCanvasRef] = useState<HTMLCanvasElement | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const { showToast } = useToast();
 
-  const handleImageLoad = () => {
+  // Use useCallback to prevent unnecessary re-renders
+  const handleImageLoad = useCallback(() => {
     setImageLoaded(true);
     showToast('Image loaded successfully!', 'success');
-  };
+  }, [showToast]);
 
-  const handleError = (message: string) => {
+  const handleError = useCallback((message: string) => {
     showToast(message, 'error');
     setIsProcessing(false);
-  };
+  }, [showToast]);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const initialized = await initializeModel();
-        if (!initialized) {
-          throw new Error("Failed to initialize background removal model");
-        }
-      } catch (err) {
-        console.error(err);
-      }
-      setIsProcessing(false);
-    })();
+  // Stable callback for setting image file
+  const handleSetImageFile = useCallback((file: File | null) => {
+    setImageFile(file);
   }, []);
+
+  // Stable callback for setting canvas ref
+  const handleSetCanvasRef = useCallback((canvas: HTMLCanvasElement) => {
+    setCanvasRef(canvas);
+  }, []);
+
+  // Stable callback for processing state
+  const handleProcessing = useCallback((processing: boolean) => {
+    setIsProcessing(processing);
+  }, []);
+
+  console.log('App.tsx render - imageLoaded:', imageLoaded, 'isProcessing:', isProcessing);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -58,15 +61,42 @@ function AppContent() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-8">
+          <div className='space-y-6'>
+            {/* AI Background Removal */}
+            <div className="bg-white/5 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <Bot className="w-5 h-5 text-green-400" />
+                <h2 className="text-lg font-semibold text-white">AI Enhancement</h2>
+              </div>
+              <AIBackgroundRemoval
+                canvas={canvasRef}
+                enabled={imageLoaded && !isProcessing}
+                onProcessing={handleProcessing}
+                onError={handleError}
+                imageFile={imageFile}
+              />
+            </div>
+
+            {/* Natural Language Commands */}
+            <div className="bg-white/5 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
+              <CommandInput
+                canvas={canvasRef}
+                enabled={imageLoaded && !isProcessing}
+                onProcessing={handleProcessing}
+                onError={handleError}
+              />
+            </div>
+          </div>
+
           {/* Main Canvas Area */}
           <div className="lg:col-span-3">
             <div className="bg-white/5 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
               <CanvasEditor
-                onCanvasRef={setCanvasRef}
+                onCanvasRef={handleSetCanvasRef}
                 onImageLoad={handleImageLoad}
                 onError={handleError}
-                setimageFile={setimageFile}
+                setimageFile={handleSetImageFile}
               />
             </div>
             {isProcessing && (
@@ -83,13 +113,6 @@ function AppContent() {
           <div className="space-y-6">
             {/* Upload Section */}
             <div className="bg-white/5 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <Upload className="w-5 h-5 text-purple-400" />
-                <h2 className="text-lg font-semibold text-white">Upload Image</h2>
-              </div>
-              <p className="text-sm text-gray-300 mb-4">
-                Drag & drop an image or click to select
-              </p>
               <div className="text-xs text-gray-400">
                 Supported: JPG, PNG, WebP up to 10MB
               </div>
@@ -104,32 +127,7 @@ function AppContent() {
               <FilterControls
                 canvas={canvasRef}
                 enabled={imageLoaded && !isProcessing}
-                onProcessing={setIsProcessing}
-                onError={handleError}
-              />
-            </div>
-
-            {/* AI Background Removal */}
-            <div className="bg-white/5 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <Bot className="w-5 h-5 text-green-400" />
-                <h2 className="text-lg font-semibold text-white">AI Enhancement</h2>
-              </div>
-              <AIBackgroundRemoval
-                canvas={canvasRef}
-                enabled={imageLoaded && !isProcessing}
-                onProcessing={setIsProcessing}
-                onError={handleError}
-                imageFile={imageFile}
-              />
-            </div>
-
-            {/* Natural Language Commands */}
-            <div className="bg-white/5 backdrop-blur-lg rounded-2xl border border-white/10 p-6">
-              <CommandInput
-                canvas={canvasRef}
-                enabled={imageLoaded && !isProcessing}
-                onProcessing={setIsProcessing}
+                onProcessing={handleProcessing}
                 onError={handleError}
               />
             </div>
@@ -141,6 +139,21 @@ function AppContent() {
 }
 
 function App() {
+  useEffect(() => {
+    (async () => {
+      try {
+        console.log('Initializing model...');
+        const initialized = await initializeModel();
+        if (!initialized) {
+          throw new Error("Failed to initialize background removal model");
+        }
+        console.log('Model initialized successfully');
+      } catch (err) {
+        console.error('Model initialization failed:', err);
+      }
+    })();
+  }, []);
+
   return (
     <ToastProvider>
       <AppContent />

@@ -6,7 +6,17 @@
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI Image Editor</title>
-  <script async src="https://docs.opencv.org/4.8.0/opencv.js"></script>
+  <script async src="https://docs.opencv.org/4.5.0/opencv.js" onload="onOpenCvReady();"></script>
+  <script>
+    function onOpenCvReady() {
+      window.opencvReady = true;
+      console.log('OpenCV.js loaded successfully');
+      // Initialize OpenCV
+      cv['onRuntimeInitialized'] = () => {
+        console.log('OpenCV runtime initialized');
+      };
+    }
+  </script>
 </head>
 
 <body>

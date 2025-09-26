@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useCallback, useState } from 'react';
-import { Upload, Image as ImageIcon } from 'lucide-react';
+import { Image as ImageIcon, Upload } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 interface CanvasEditorProps {
   onCanvasRef: (canvas: HTMLCanvasElement) => void;
@@ -14,6 +14,8 @@ const CanvasEditor: React.FC<CanvasEditorProps> = ({
   onError,
   setimageFile,
 }) => {
+  // console.log('CanvasEditor.tsx')
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);

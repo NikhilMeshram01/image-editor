@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { Scissors, Loader2 } from 'lucide-react';
-import { processImage, initializeModel } from '../utils/process';
+import { Loader2, Scissors } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { initializeModel, processImage } from '../utils/process';
 
 interface AIBackgroundRemovalProps {
   canvas: HTMLCanvasElement | null;
@@ -17,6 +17,8 @@ const AIBackgroundRemoval: React.FC<AIBackgroundRemovalProps> = ({
   onError,
   imageFile,
 }) => {
+  // console.log('AIBackgroundRemoval.tsx')
+
   const [isLoading, setIsLoading] = useState(false);
   const [isModelLoaded, setIsModelLoaded] = useState(false);
 
@@ -24,7 +26,17 @@ const AIBackgroundRemoval: React.FC<AIBackgroundRemovalProps> = ({
   useEffect(() => {
     // Since initializeModel is called in App.tsx, we just need to verify it's ready
     // This could be improved by checking the model state directly if exposed
-    setIsModelLoaded(true); // Assume model is loaded by App.tsx
+    (async () => {
+      try {
+        const initialized = await initializeModel();
+        if (!initialized) {
+          throw new Error("Failed to initialize background removal model");
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      setIsModelLoaded(true); // Assume model is loaded by App.tsx
+    })();
   }, []);
 
   const removeBackground = useCallback(async () => {
@@ -52,7 +64,7 @@ const AIBackgroundRemoval: React.FC<AIBackgroundRemovalProps> = ({
       }
 
       const { processedFile } = result;
-
+      // setprocessedImage(processedFile)
       // Load processed image into canvas
       const img = new Image();
       img.src = URL.createObjectURL(processedFile);
@@ -95,17 +107,17 @@ const AIBackgroundRemoval: React.FC<AIBackgroundRemovalProps> = ({
       </button>
 
       <div className="text-xs text-gray-400 space-y-1">
-        <p>• Uses AI (RMBG-1.4) client-side for automatic background removal</p>
-        <p>• Works best with clear subject separation</p>
+        {/* <p>• Uses AI (RMBG-1.4) client-side for automatic background removal</p>
+        <p>• Works best with clear subject separation</p> */}
         <p>• Processing may take 10-30 seconds for first load</p>
       </div>
 
-      <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+      {/* <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
         <p className="text-xs text-blue-400">
           <strong>Tip:</strong> No API key needed. Runs in browser with WebAssembly.
           Enable WebGPU for faster processing in production.
         </p>
-      </div>
+      </div> */}
     </div>
   );
 };
